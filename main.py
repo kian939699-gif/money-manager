@@ -9,12 +9,14 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.properties import StringProperty, NumericProperty
 
 
+APP_NAME = "Money Manager"
+APP_VERSION = "1.0.0"
+
+
 KV = r'''
 #:import dp kivy.metrics.dp
 
-
 <MainScreen>:
-
     BoxLayout:
         orientation: "vertical"
         padding: dp(10)
@@ -22,20 +24,20 @@ KV = r'''
 
         canvas.before:
             Color:
-                rgba: 0.035, 0.045, 0.075, 1
+                rgba: .035, .045, .075, 1
             Rectangle:
                 pos: self.pos
                 size: self.size
 
         Label:
-            text: "💰 MONEY MANAGER 3"
+            text: "💰 MONEY MANAGER"
             font_size: "25sp"
             bold: True
             size_hint_y: None
-            height: dp(45)
+            height: dp(42)
 
         Label:
-            text: "مدیریت هوشمند پول"
+            text: "مدیریت هوشمند درآمد و هزینه"
             font_size: "13sp"
             size_hint_y: None
             height: dp(22)
@@ -47,10 +49,11 @@ KV = r'''
 
             BoxLayout:
                 orientation: "vertical"
+                padding: dp(5)
 
                 canvas.before:
                     Color:
-                        rgba: 0.04, 0.22, 0.12, 1
+                        rgba: .04, .22, .12, 1
                     RoundedRectangle:
                         pos: self.pos
                         size: self.size
@@ -67,10 +70,11 @@ KV = r'''
 
             BoxLayout:
                 orientation: "vertical"
+                padding: dp(5)
 
                 canvas.before:
                     Color:
-                        rgba: 0.28, 0.06, 0.08, 1
+                        rgba: .28, .06, .08, 1
                     RoundedRectangle:
                         pos: self.pos
                         size: self.size
@@ -87,10 +91,11 @@ KV = r'''
 
             BoxLayout:
                 orientation: "vertical"
+                padding: dp(5)
 
                 canvas.before:
                     Color:
-                        rgba: 0.07, 0.13, 0.28, 1
+                        rgba: .07, .13, .28, 1
                     RoundedRectangle:
                         pos: self.pos
                         size: self.size
@@ -108,7 +113,7 @@ KV = r'''
         Label:
             text: root.message
             size_hint_y: None
-            height: dp(28)
+            height: dp(27)
 
         TextInput:
             id: amount
@@ -117,15 +122,15 @@ KV = r'''
             multiline: False
             font_size: "18sp"
             size_hint_y: None
-            height: dp(48)
+            height: dp(47)
 
         TextInput:
             id: title
-            hint_text: "📝 عنوان"
+            hint_text: "📝 عنوان تراکنش"
             multiline: False
             font_size: "16sp"
             size_hint_y: None
-            height: dp(48)
+            height: dp(47)
 
         TextInput:
             id: category
@@ -133,11 +138,11 @@ KV = r'''
             multiline: False
             font_size: "16sp"
             size_hint_y: None
-            height: dp(48)
+            height: dp(47)
 
         BoxLayout:
             size_hint_y: None
-            height: dp(50)
+            height: dp(49)
             spacing: dp(7)
 
             Button:
@@ -152,7 +157,7 @@ KV = r'''
 
         BoxLayout:
             size_hint_y: None
-            height: dp(50)
+            height: dp(49)
             spacing: dp(6)
 
             Button:
@@ -169,7 +174,7 @@ KV = r'''
 
         BoxLayout:
             size_hint_y: None
-            height: dp(50)
+            height: dp(49)
             spacing: dp(6)
 
             Button:
@@ -177,12 +182,11 @@ KV = r'''
                 on_release: root.open_settings()
 
             Button:
-                text: "🧹 پاک کردن فرم"
+                text: "🧹 پاک کردن"
                 on_release: root.clear_form()
 
 
 <HistoryScreen>:
-
     BoxLayout:
         orientation: "vertical"
         padding: dp(10)
@@ -190,13 +194,13 @@ KV = r'''
 
         canvas.before:
             Color:
-                rgba: 0.035, 0.045, 0.075, 1
+                rgba: .035, .045, .075, 1
             Rectangle:
                 pos: self.pos
                 size: self.size
 
         Label:
-            text: "📜 تاریخچه"
+            text: "📜 تاریخچه تراکنش‌ها"
             font_size: "24sp"
             bold: True
             size_hint_y: None
@@ -207,11 +211,10 @@ KV = r'''
             hint_text: "🔎 جستجو..."
             multiline: False
             size_hint_y: None
-            height: dp(48)
+            height: dp(47)
             on_text: root.refresh(self.text)
 
         ScrollView:
-
             Label:
                 text: root.history_text
                 font_size: "16sp"
@@ -223,8 +226,8 @@ KV = r'''
 
         BoxLayout:
             size_hint_y: None
-            height: dp(50)
-            spacing: dp(7)
+            height: dp(48)
+            spacing: dp(6)
 
             Button:
                 text: "🗑 حذف آخرین"
@@ -237,12 +240,11 @@ KV = r'''
         Button:
             text: "⬅️ بازگشت"
             size_hint_y: None
-            height: dp(50)
+            height: dp(49)
             on_release: app.root.current = "main"
 
 
 <ReportScreen>:
-
     BoxLayout:
         orientation: "vertical"
         padding: dp(12)
@@ -250,7 +252,7 @@ KV = r'''
 
         canvas.before:
             Color:
-                rgba: 0.035, 0.045, 0.075, 1
+                rgba: .035, .045, .075, 1
             Rectangle:
                 pos: self.pos
                 size: self.size
@@ -260,10 +262,9 @@ KV = r'''
             font_size: "25sp"
             bold: True
             size_hint_y: None
-            height: dp(50)
+            height: dp(48)
 
         ScrollView:
-
             Label:
                 text: root.report_text
                 font_size: "18sp"
@@ -276,12 +277,11 @@ KV = r'''
         Button:
             text: "⬅️ بازگشت"
             size_hint_y: None
-            height: dp(52)
+            height: dp(50)
             on_release: app.root.current = "main"
 
 
 <GoalScreen>:
-
     BoxLayout:
         orientation: "vertical"
         padding: dp(15)
@@ -289,7 +289,7 @@ KV = r'''
 
         canvas.before:
             Color:
-                rgba: 0.035, 0.045, 0.075, 1
+                rgba: .035, .045, .075, 1
             Rectangle:
                 pos: self.pos
                 size: self.size
@@ -335,7 +335,6 @@ KV = r'''
 
 
 <SettingsScreen>:
-
     BoxLayout:
         orientation: "vertical"
         padding: dp(15)
@@ -343,7 +342,7 @@ KV = r'''
 
         canvas.before:
             Color:
-                rgba: 0.035, 0.045, 0.075, 1
+                rgba: .035, .045, .075, 1
             Rectangle:
                 pos: self.pos
                 size: self.size
@@ -380,6 +379,11 @@ KV = r'''
 
         Widget:
 
+        Label:
+            text: "Money Manager " + root.version
+            size_hint_y: None
+            height: dp(30)
+
         Button:
             text: "⬅️ بازگشت"
             size_hint_y: None
@@ -402,17 +406,16 @@ class MainScreen(Screen):
 
         app = App.get_running_app()
 
-        income = sum(
-            x["amount"]
-            for x in app.data["transactions"]
-            if x["type"] == "income"
-        )
+        income = 0
+        expense = 0
 
-        expense = sum(
-            x["amount"]
-            for x in app.data["transactions"]
-            if x["type"] == "expense"
-        )
+        for item in app.data["transactions"]:
+
+            if item["type"] == "income":
+                income += item["amount"]
+
+            elif item["type"] == "expense":
+                expense += item["amount"]
 
         balance = income - expense
 
@@ -424,11 +427,15 @@ class MainScreen(Screen):
 
         amount_text = self.ids.amount.text.strip()
 
-        if not amount_text.isdigit() or int(amount_text) <= 0:
+        if not amount_text.isdigit():
             self.message = "⚠️ مبلغ معتبر وارد کن"
             return
 
         amount = int(amount_text)
+
+        if amount <= 0:
+            self.message = "⚠️ مبلغ باید بیشتر از صفر باشد"
+            return
 
         title = self.ids.title.text.strip()
 
@@ -441,16 +448,19 @@ class MainScreen(Screen):
             category = "عمومی"
 
         transaction = {
+            "id": self.make_id(),
             "type": kind,
             "amount": amount,
             "title": title,
             "category": category,
-            "date": datetime.now().strftime("%Y/%m/%d %H:%M")
+            "date": datetime.now().strftime(
+                "%Y/%m/%d %H:%M"
+            )
         }
 
-        App.get_running_app().data["transactions"].append(
-            transaction
-        )
+        App.get_running_app().data[
+            "transactions"
+        ].append(transaction)
 
         App.get_running_app().save_file()
 
@@ -461,6 +471,16 @@ class MainScreen(Screen):
             self.message = "✅ درآمد ثبت شد"
         else:
             self.message = "✅ هزینه ثبت شد"
+
+    def make_id(self):
+
+        app = App.get_running_app()
+
+        return (
+            str(len(app.data["transactions"]) + 1)
+            + "_"
+            + str(int(datetime.now().timestamp()))
+        )
 
     def clear_form(self):
 
@@ -494,6 +514,10 @@ class MainScreen(Screen):
 
     def open_settings(self):
 
+        screen = self.manager.get_screen("settings")
+
+        screen.version = APP_VERSION
+
         self.manager.current = "settings"
 
 
@@ -503,7 +527,9 @@ class HistoryScreen(Screen):
 
     def refresh(self, search=""):
 
-        transactions = App.get_running_app().data["transactions"]
+        app = App.get_running_app()
+
+        transactions = app.data["transactions"]
 
         search = search.lower().strip()
 
@@ -512,13 +538,13 @@ class HistoryScreen(Screen):
         for index, item in enumerate(transactions):
 
             searchable = (
-                item["title"]
+                str(item.get("title", ""))
                 + " "
-                + item["category"]
+                + str(item.get("category", ""))
                 + " "
-                + str(item["amount"])
+                + str(item.get("amount", ""))
                 + " "
-                + item["date"]
+                + str(item.get("date", ""))
             ).lower()
 
             if not search or search in searchable:
@@ -529,7 +555,9 @@ class HistoryScreen(Screen):
 
         if not results:
 
-            self.history_text = "📭 تراکنشی پیدا نشد."
+            self.history_text = (
+                "📭 تراکنشی پیدا نشد."
+            )
 
             return
 
@@ -552,7 +580,7 @@ class HistoryScreen(Screen):
                 f"💵 {sign}{item['amount']:,} تومان\n"
                 f"📂 {item['category']}\n"
                 f"🕐 {item['date']}\n"
-                f"شماره تراکنش: {index + 1}\n"
+                f"شناسه: {index + 1}\n"
                 "━━━━━━━━━━━━━━━━\n"
             )
 
@@ -560,11 +588,15 @@ class HistoryScreen(Screen):
 
     def delete_last(self):
 
-        data = App.get_running_app().data["transactions"]
+        data = App.get_running_app().data[
+            "transactions"
+        ]
 
         if not data:
 
-            self.history_text = "📭 تراکنشی وجود ندارد."
+            self.history_text = (
+                "📭 تراکنشی وجود ندارد."
+            )
 
             return
 
@@ -578,7 +610,9 @@ class HistoryScreen(Screen):
 
     def delete_all(self):
 
-        App.get_running_app().data["transactions"] = []
+        App.get_running_app().data[
+            "transactions"
+        ] = []
 
         App.get_running_app().save_file()
 
@@ -598,7 +632,6 @@ class ReportScreen(Screen):
 
         income = 0
         expense = 0
-
         categories = {}
 
         for item in transactions:
@@ -611,7 +644,10 @@ class ReportScreen(Screen):
 
                 expense += item["amount"]
 
-                category = item["category"]
+                category = item.get(
+                    "category",
+                    "عمومی"
+                )
 
                 categories[category] = (
                     categories.get(category, 0)
@@ -656,14 +692,14 @@ class ReportScreen(Screen):
             )
 
         self.report_text = (
-            "📊 گزارش کامل\n\n"
+            "📊 گزارش مالی کامل\n\n"
             f"💰 کل درآمد:\n"
             f"{income:,} تومان\n\n"
             f"💸 کل هزینه:\n"
             f"{expense:,} تومان\n\n"
             f"💵 موجودی:\n"
             f"{balance:,} تومان\n\n"
-            f"📈 درصد باقی‌مانده:\n"
+            f"📈 درصد باقی‌مانده از درآمد:\n"
             f"{saving_percent:.1f}%\n\n"
             "📂 هزینه بر اساس دسته‌بندی:\n\n"
             f"{category_text}"
@@ -686,7 +722,7 @@ class GoalScreen(Screen):
 
         value = self.ids.goal.text.strip()
 
-        if not value.isdigit() or int(value) <= 0:
+        if not value.isdigit():
 
             self.goal_text = (
                 "⚠️ مبلغ هدف معتبر نیست."
@@ -694,9 +730,19 @@ class GoalScreen(Screen):
 
             return
 
-        App.get_running_app().data["goal"] = (
-            int(value)
-        )
+        value = int(value)
+
+        if value <= 0:
+
+            self.goal_text = (
+                "⚠️ مبلغ هدف باید بیشتر از صفر باشد."
+            )
+
+            return
+
+        App.get_running_app().data[
+            "goal"
+        ] = value
 
         App.get_running_app().save_file()
 
@@ -708,19 +754,23 @@ class GoalScreen(Screen):
 
         app = App.get_running_app()
 
-        goal = app.data.get("goal", 0)
-
-        income = sum(
-            x["amount"]
-            for x in app.data["transactions"]
-            if x["type"] == "income"
+        goal = app.data.get(
+            "goal",
+            0
         )
 
-        expense = sum(
-            x["amount"]
-            for x in app.data["transactions"]
-            if x["type"] == "expense"
-        )
+        income = 0
+        expense = 0
+
+        for item in app.data["transactions"]:
+
+            if item["type"] == "income":
+
+                income += item["amount"]
+
+            else:
+
+                expense += item["amount"]
 
         balance = income - expense
 
@@ -746,18 +796,26 @@ class GoalScreen(Screen):
 
         self.progress = percent
 
+        remaining = goal - balance
+
+        if remaining < 0:
+            remaining = 0
+
         self.goal_text = (
             f"🎯 هدف: {goal:,} تومان\n\n"
             f"💰 موجودی فعلی: "
             f"{balance:,} تومان\n\n"
             f"📈 پیشرفت: "
-            f"{percent:.1f}%"
+            f"{percent:.1f}%\n\n"
+            f"💵 باقی‌مانده تا هدف: "
+            f"{remaining:,} تومان"
         )
 
 
 class SettingsScreen(Screen):
 
     status = StringProperty("")
+    version = StringProperty(APP_VERSION)
 
     def backup(self):
 
@@ -765,30 +823,28 @@ class SettingsScreen(Screen):
 
         try:
 
-            if os.path.exists(
+            if not os.path.exists(
                 app.file_path
             ):
 
-                shutil.copy2(
-                    app.file_path,
-                    app.backup_path
-                )
+                app.save_file()
 
-                self.status = (
-                    "✅ بکاپ ساخته شد"
-                )
-
-            else:
-
-                self.status = (
-                    "⚠️ اطلاعاتی برای بکاپ نیست"
-                )
-
-        except Exception as e:
+            shutil.copy2(
+                app.file_path,
+                app.backup_path
+            )
 
             self.status = (
-                f"❌ خطا: {e}"
+                "✅ بکاپ با موفقیت ساخته شد"
             )
+
+        except Exception as error:
+
+            self.status = (
+                "❌ خطا در ساخت بکاپ"
+            )
+
+            print(error)
 
     def restore(self):
 
@@ -801,7 +857,7 @@ class SettingsScreen(Screen):
             ):
 
                 self.status = (
-                    "⚠️ بکاپ پیدا نشد"
+                    "⚠️ فایل بکاپ پیدا نشد"
                 )
 
                 return
@@ -823,11 +879,13 @@ class SettingsScreen(Screen):
                 "✅ بکاپ بازیابی شد"
             )
 
-        except Exception as e:
+        except Exception as error:
 
             self.status = (
-                f"❌ خطا: {e}"
+                "❌ خطا در بازیابی"
             )
+
+            print(error)
 
     def reset_all(self):
 
@@ -847,7 +905,7 @@ class SettingsScreen(Screen):
         main.update_dashboard()
 
         self.status = (
-            "♻️ اطلاعات پاک شد"
+            "♻️ تمام اطلاعات پاک شد"
         )
 
 
@@ -855,7 +913,7 @@ class MoneyManagerApp(App):
 
     def build(self):
 
-        self.title = "Money Manager 3"
+        self.title = APP_NAME
 
         self.data = {
             "transactions": [],
@@ -864,7 +922,7 @@ class MoneyManagerApp(App):
 
         self.file_path = os.path.join(
             self.user_data_dir,
-            "money_manager.json"
+            "money_manager_data.json"
         )
 
         self.backup_path = os.path.join(
@@ -924,7 +982,24 @@ class MoneyManagerApp(App):
                     encoding="utf-8"
                 ) as file:
 
-                    self.data = json.load(file)
+                    loaded = json.load(file)
+
+                    if isinstance(
+                        loaded,
+                        dict
+                    ):
+
+                        self.data = loaded
+
+            if not isinstance(
+                self.data,
+                dict
+            ):
+
+                self.data = {
+                    "transactions": [],
+                    "goal": 0
+                }
 
             if "transactions" not in self.data:
 
@@ -934,7 +1009,12 @@ class MoneyManagerApp(App):
 
                 self.data["goal"] = 0
 
-        except Exception:
+        except Exception as error:
+
+            print(
+                "Load error:",
+                error
+            )
 
             self.data = {
                 "transactions": [],
@@ -950,8 +1030,13 @@ class MoneyManagerApp(App):
                 exist_ok=True
             )
 
+            temp_file = (
+                self.file_path
+                + ".tmp"
+            )
+
             with open(
-                self.file_path,
+                temp_file,
                 "w",
                 encoding="utf-8"
             ) as file:
@@ -963,11 +1048,24 @@ class MoneyManagerApp(App):
                     indent=2
                 )
 
-        except Exception as e:
+            if os.path.exists(
+                self.file_path
+            ):
+
+                os.remove(
+                    self.file_path
+                )
+
+            os.rename(
+                temp_file,
+                self.file_path
+            )
+
+        except Exception as error:
 
             print(
                 "Save error:",
-                e
+                error
             )
 
 
