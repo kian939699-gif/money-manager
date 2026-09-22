@@ -1,1240 +1,976 @@
-__version__ = "2.1.0"
-
-import json
 import os
+import json
+import shutil
 from datetime import datetime
 
 from kivy.app import App
-from kivy.metrics import dp, sp
-from kivy.core.window import Window
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.label import Label
-from kivy.uix.button import Button
-from kivy.uix.textinput import TextInput
-from kivy.uix.scrollview import ScrollView
-from kivy.uix.popup import Popup
-from kivy.uix.progressbar import ProgressBar
-from kivy.uix.widget import Widget
-from kivy.graphics import Color, RoundedRectangle
+from kivy.lang import Builder
+from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.properties import StringProperty, NumericProperty
 
 
-DATA_FILE = "money_data.json"
+KV = r'''
+#:import dp kivy.metrics.dp
 
 
-# ---------------------------------------------------------
-# HELPERS
-# ---------------------------------------------------------
+<MainScreen>:
 
-def money(value):
-    try:
-        value = float(value)
-    except:
-        value = 0
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(10)
+        spacing: dp(7)
 
-    if value == int(value):
-        return f"{int(value):,}"
+        canvas.before:
+            Color:
+                rgba: 0.035, 0.045, 0.075, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
 
-    return f"{value:,.2f}"
+        Label:
+            text: "💰 MONEY MANAGER 3"
+            font_size: "25sp"
+            bold: True
+            size_hint_y: None
+            height: dp(45)
+
+        Label:
+            text: "مدیریت هوشمند پول"
+            font_size: "13sp"
+            size_hint_y: None
+            height: dp(22)
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(100)
+            spacing: dp(6)
+
+            BoxLayout:
+                orientation: "vertical"
+
+                canvas.before:
+                    Color:
+                        rgba: 0.04, 0.22, 0.12, 1
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [15]
+
+                Label:
+                    text: "💰 درآمد"
+                    font_size: "14sp"
+
+                Label:
+                    text: root.income_text
+                    font_size: "16sp"
+                    bold: True
+
+            BoxLayout:
+                orientation: "vertical"
+
+                canvas.before:
+                    Color:
+                        rgba: 0.28, 0.06, 0.08, 1
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [15]
+
+                Label:
+                    text: "💸 هزینه"
+                    font_size: "14sp"
+
+                Label:
+                    text: root.expense_text
+                    font_size: "16sp"
+                    bold: True
+
+            BoxLayout:
+                orientation: "vertical"
+
+                canvas.before:
+                    Color:
+                        rgba: 0.07, 0.13, 0.28, 1
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [15]
+
+                Label:
+                    text: "💵 موجودی"
+                    font_size: "14sp"
+
+                Label:
+                    text: root.balance_text
+                    font_size: "16sp"
+                    bold: True
+
+        Label:
+            text: root.message
+            size_hint_y: None
+            height: dp(28)
+
+        TextInput:
+            id: amount
+            hint_text: "💵 مبلغ"
+            input_filter: "int"
+            multiline: False
+            font_size: "18sp"
+            size_hint_y: None
+            height: dp(48)
+
+        TextInput:
+            id: title
+            hint_text: "📝 عنوان"
+            multiline: False
+            font_size: "16sp"
+            size_hint_y: None
+            height: dp(48)
+
+        TextInput:
+            id: category
+            hint_text: "📂 دسته‌بندی"
+            multiline: False
+            font_size: "16sp"
+            size_hint_y: None
+            height: dp(48)
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(50)
+            spacing: dp(7)
+
+            Button:
+                text: "➕ درآمد"
+                font_size: "17sp"
+                on_release: root.add_transaction("income")
+
+            Button:
+                text: "➖ هزینه"
+                font_size: "17sp"
+                on_release: root.add_transaction("expense")
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(50)
+            spacing: dp(6)
+
+            Button:
+                text: "📜 تاریخچه"
+                on_release: root.open_history()
+
+            Button:
+                text: "📊 گزارش"
+                on_release: root.open_report()
+
+            Button:
+                text: "🎯 هدف"
+                on_release: root.open_goal()
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(50)
+            spacing: dp(6)
+
+            Button:
+                text: "⚙️ تنظیمات"
+                on_release: root.open_settings()
+
+            Button:
+                text: "🧹 پاک کردن فرم"
+                on_release: root.clear_form()
 
 
-def today():
-    return datetime.now().strftime("%Y-%m-%d")
+<HistoryScreen>:
+
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(10)
+        spacing: dp(7)
+
+        canvas.before:
+            Color:
+                rgba: 0.035, 0.045, 0.075, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        Label:
+            text: "📜 تاریخچه"
+            font_size: "24sp"
+            bold: True
+            size_hint_y: None
+            height: dp(45)
+
+        TextInput:
+            id: search
+            hint_text: "🔎 جستجو..."
+            multiline: False
+            size_hint_y: None
+            height: dp(48)
+            on_text: root.refresh(self.text)
+
+        ScrollView:
+
+            Label:
+                text: root.history_text
+                font_size: "16sp"
+                text_size: self.width, None
+                halign: "right"
+                valign: "top"
+                size_hint_y: None
+                height: self.texture_size[1]
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(50)
+            spacing: dp(7)
+
+            Button:
+                text: "🗑 حذف آخرین"
+                on_release: root.delete_last()
+
+            Button:
+                text: "🗑 حذف همه"
+                on_release: root.delete_all()
+
+        Button:
+            text: "⬅️ بازگشت"
+            size_hint_y: None
+            height: dp(50)
+            on_release: app.root.current = "main"
 
 
-def make_id():
-    return datetime.now().strftime("%Y%m%d%H%M%S%f")
+<ReportScreen>:
+
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(12)
+        spacing: dp(8)
+
+        canvas.before:
+            Color:
+                rgba: 0.035, 0.045, 0.075, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        Label:
+            text: "📊 گزارش مالی"
+            font_size: "25sp"
+            bold: True
+            size_hint_y: None
+            height: dp(50)
+
+        ScrollView:
+
+            Label:
+                text: root.report_text
+                font_size: "18sp"
+                text_size: self.width, None
+                halign: "right"
+                valign: "top"
+                size_hint_y: None
+                height: self.texture_size[1]
+
+        Button:
+            text: "⬅️ بازگشت"
+            size_hint_y: None
+            height: dp(52)
+            on_release: app.root.current = "main"
 
 
-# ---------------------------------------------------------
-# MAIN APP
-# ---------------------------------------------------------
+<GoalScreen>:
 
-class MoneyManagerApp(App):
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(15)
+        spacing: dp(10)
 
-    def build(self):
+        canvas.before:
+            Color:
+                rgba: 0.035, 0.045, 0.075, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
 
-        Window.clearcolor = (0.035, 0.035, 0.045, 1)
+        Label:
+            text: "🎯 هدف پس‌انداز"
+            font_size: "25sp"
+            bold: True
+            size_hint_y: None
+            height: dp(50)
 
-        self.data = self.load_data()
+        TextInput:
+            id: goal
+            hint_text: "مبلغ هدف"
+            input_filter: "int"
+            multiline: False
+            font_size: "18sp"
+            size_hint_y: None
+            height: dp(52)
 
-        self.root_box = BoxLayout(
-            orientation="vertical",
-            padding=dp(12),
-            spacing=dp(8)
+        Button:
+            text: "🎯 ثبت هدف"
+            size_hint_y: None
+            height: dp(52)
+            on_release: root.set_goal()
+
+        Label:
+            text: root.goal_text
+            font_size: "18sp"
+            text_size: self.width, None
+
+        ProgressBar:
+            max: 100
+            value: root.progress
+            size_hint_y: None
+            height: dp(30)
+
+        Button:
+            text: "⬅️ بازگشت"
+            size_hint_y: None
+            height: dp(52)
+            on_release: app.root.current = "main"
+
+
+<SettingsScreen>:
+
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(15)
+        spacing: dp(10)
+
+        canvas.before:
+            Color:
+                rgba: 0.035, 0.045, 0.075, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        Label:
+            text: "⚙️ تنظیمات"
+            font_size: "25sp"
+            bold: True
+            size_hint_y: None
+            height: dp(50)
+
+        Button:
+            text: "💾 ساخت بکاپ"
+            size_hint_y: None
+            height: dp(52)
+            on_release: root.backup()
+
+        Button:
+            text: "♻️ بازیابی بکاپ"
+            size_hint_y: None
+            height: dp(52)
+            on_release: root.restore()
+
+        Button:
+            text: "🗑 پاک کردن تمام اطلاعات"
+            size_hint_y: None
+            height: dp(52)
+            on_release: root.reset_all()
+
+        Label:
+            text: root.status
+            font_size: "17sp"
+            text_size: self.width, None
+
+        Widget:
+
+        Button:
+            text: "⬅️ بازگشت"
+            size_hint_y: None
+            height: dp(52)
+            on_release: app.root.current = "main"
+'''
+
+
+class MainScreen(Screen):
+
+    income_text = StringProperty("0 تومان")
+    expense_text = StringProperty("0 تومان")
+    balance_text = StringProperty("0 تومان")
+    message = StringProperty("آماده به کار")
+
+    def on_enter(self):
+        self.update_dashboard()
+
+    def update_dashboard(self):
+
+        app = App.get_running_app()
+
+        income = sum(
+            x["amount"]
+            for x in app.data["transactions"]
+            if x["type"] == "income"
         )
 
-        self.build_header()
-        self.build_dashboard()
+        expense = sum(
+            x["amount"]
+            for x in app.data["transactions"]
+            if x["type"] == "expense"
+        )
 
-        return self.root_box
+        balance = income - expense
 
-    # -----------------------------------------------------
-    # DATA
-    # -----------------------------------------------------
+        self.income_text = f"{income:,} تومان"
+        self.expense_text = f"{expense:,} تومان"
+        self.balance_text = f"{balance:,} تومان"
 
-    def default_data(self):
-        return {
-            "transactions": [],
-            "goal": 0,
-            "goal_name": "Savings Goal"
+    def add_transaction(self, kind):
+
+        amount_text = self.ids.amount.text.strip()
+
+        if not amount_text.isdigit() or int(amount_text) <= 0:
+            self.message = "⚠️ مبلغ معتبر وارد کن"
+            return
+
+        amount = int(amount_text)
+
+        title = self.ids.title.text.strip()
+
+        if not title:
+            title = "بدون عنوان"
+
+        category = self.ids.category.text.strip()
+
+        if not category:
+            category = "عمومی"
+
+        transaction = {
+            "type": kind,
+            "amount": amount,
+            "title": title,
+            "category": category,
+            "date": datetime.now().strftime("%Y/%m/%d %H:%M")
         }
 
-    def load_data(self):
+        App.get_running_app().data["transactions"].append(
+            transaction
+        )
 
-        if not os.path.exists(DATA_FILE):
-            return self.default_data()
+        App.get_running_app().save_file()
 
-        try:
-            with open(DATA_FILE, "r", encoding="utf-8") as f:
-                old = json.load(f)
+        self.clear_form()
+        self.update_dashboard()
 
-            data = self.default_data()
+        if kind == "income":
+            self.message = "✅ درآمد ثبت شد"
+        else:
+            self.message = "✅ هزینه ثبت شد"
 
-            # New format
-            if isinstance(old, dict):
+    def clear_form(self):
 
-                if isinstance(old.get("transactions"), list):
-                    data["transactions"] = old["transactions"]
+        self.ids.amount.text = ""
+        self.ids.title.text = ""
+        self.ids.category.text = ""
 
-                data["goal"] = old.get(
-                    "goal",
-                    old.get("goal_amount", 0)
-                )
+    def open_history(self):
 
-                data["goal_name"] = old.get(
-                    "goal_name",
-                    "Savings Goal"
-                )
+        screen = self.manager.get_screen("history")
 
-            self.normalize_transactions(data)
+        screen.refresh("")
 
-            return data
+        self.manager.current = "history"
 
-        except Exception:
-            return self.default_data()
+    def open_report(self):
 
-    def normalize_transactions(self, data):
+        screen = self.manager.get_screen("report")
 
-        clean = []
+        screen.update()
 
-        for item in data.get("transactions", []):
+        self.manager.current = "report"
 
-            if not isinstance(item, dict):
-                continue
+    def open_goal(self):
 
-            amount = item.get(
-                "amount",
-                item.get("value", 0)
-            )
+        screen = self.manager.get_screen("goal")
 
-            try:
-                amount = float(amount)
-            except:
-                continue
+        screen.update()
 
-            typ = str(
-                item.get(
-                    "type",
-                    item.get("kind", "expense")
-                )
+        self.manager.current = "goal"
+
+    def open_settings(self):
+
+        self.manager.current = "settings"
+
+
+class HistoryScreen(Screen):
+
+    history_text = StringProperty("")
+
+    def refresh(self, search=""):
+
+        transactions = App.get_running_app().data["transactions"]
+
+        search = search.lower().strip()
+
+        results = []
+
+        for index, item in enumerate(transactions):
+
+            searchable = (
+                item["title"]
+                + " "
+                + item["category"]
+                + " "
+                + str(item["amount"])
+                + " "
+                + item["date"]
             ).lower()
 
-            if typ in ("income", "in", "درآمد"):
-                typ = "income"
-            else:
-                typ = "expense"
+            if not search or search in searchable:
 
-            clean.append({
-                "id": item.get("id", make_id()),
-                "type": typ,
-                "amount": amount,
-                "category": str(
-                    item.get(
-                        "category",
-                        item.get("name", "Other")
-                    )
-                ),
-                "date": str(
-                    item.get(
-                        "date",
-                        today()
-                    )
-                ),
-                "note": str(
-                    item.get(
-                        "note",
-                        item.get("description", "")
-                    )
+                results.append(
+                    (index, item)
                 )
-            })
 
-        data["transactions"] = clean
+        if not results:
 
-    def save_data(self):
+            self.history_text = "📭 تراکنشی پیدا نشد."
 
-        try:
-            with open(DATA_FILE, "w", encoding="utf-8") as f:
-                json.dump(
-                    self.data,
-                    f,
-                    ensure_ascii=False,
-                    indent=2
-                )
-        except Exception:
-            pass
-
-    # -----------------------------------------------------
-    # UI HELPERS
-    # -----------------------------------------------------
-
-    def label(self, text, size=16, bold=False):
-        return Label(
-            text=text,
-            font_size=sp(size),
-            bold=bold,
-            color=(0.95, 0.95, 0.98, 1),
-            halign="center",
-            valign="middle"
-        )
-
-    def button(self, text, callback, height=48):
-        btn = Button(
-            text=text,
-            font_size=sp(15),
-            size_hint_y=None,
-            height=dp(height),
-            background_normal="",
-            background_color=(0.16, 0.17, 0.21, 1),
-            color=(1, 1, 1, 1)
-        )
-        btn.bind(on_release=callback)
-        return btn
-
-    def input_box(self, hint="", text=""):
-        return TextInput(
-            hint_text=hint,
-            text=text,
-            multiline=False,
-            font_size=sp(16),
-            size_hint_y=None,
-            height=dp(50),
-            padding=[dp(12), dp(12)]
-        )
-
-    # -----------------------------------------------------
-    # HEADER
-    # -----------------------------------------------------
-
-    def build_header(self):
-
-        header = BoxLayout(
-            size_hint_y=None,
-            height=dp(65),
-            spacing=dp(8)
-        )
-
-        title = self.label(
-            "💰 MONEY MANAGER",
-            23,
-            True
-        )
-
-        version = self.label(
-            "v2.1",
-            13,
-            False
-        )
-
-        header.add_widget(title)
-        header.add_widget(version)
-
-        self.root_box.add_widget(header)
-
-    # -----------------------------------------------------
-    # DASHBOARD
-    # -----------------------------------------------------
-
-    def build_dashboard(self):
-
-        self.dashboard = BoxLayout(
-            orientation="vertical",
-            spacing=dp(8)
-        )
-
-        self.root_box.add_widget(self.dashboard)
-
-        self.refresh_dashboard()
-
-    def refresh_dashboard(self):
-
-        self.dashboard.clear_widgets()
-
-        income = sum(
-            x["amount"]
-            for x in self.data["transactions"]
-            if x["type"] == "income"
-        )
-
-        expense = sum(
-            x["amount"]
-            for x in self.data["transactions"]
-            if x["type"] == "expense"
-        )
-
-        balance = income - expense
-
-        # Balance
-        balance_box = BoxLayout(
-            orientation="vertical",
-            size_hint_y=None,
-            height=dp(125),
-            padding=dp(12)
-        )
-
-        balance_box.add_widget(
-            self.label("CURRENT BALANCE", 15, True)
-        )
-
-        self.balance_label = self.label(
-            money(balance),
-            32,
-            True
-        )
-
-        balance_box.add_widget(self.balance_label)
-
-        self.dashboard.add_widget(balance_box)
-
-        # Summary
-        summary = GridLayout(
-            cols=2,
-            size_hint_y=None,
-            height=dp(85),
-            spacing=dp(8)
-        )
-
-        summary.add_widget(
-            self.label(
-                f"INCOME\n{money(income)}",
-                15,
-                True
-            )
-        )
-
-        summary.add_widget(
-            self.label(
-                f"EXPENSE\n{money(expense)}",
-                15,
-                True
-            )
-        )
-
-        self.dashboard.add_widget(summary)
-
-        # Buttons
-        actions = GridLayout(
-            cols=2,
-            size_hint_y=None,
-            height=dp(105),
-            spacing=dp(8)
-        )
-
-        actions.add_widget(
-            self.button(
-                "➕ ADD INCOME",
-                self.add_income
-            )
-        )
-
-        actions.add_widget(
-            self.button(
-                "➖ ADD EXPENSE",
-                self.add_expense
-            )
-        )
-
-        actions.add_widget(
-            self.button(
-                "🎯 SAVINGS GOAL",
-                self.goal_popup
-            )
-        )
-
-        actions.add_widget(
-            self.button(
-                "📊 REPORT",
-                self.report_popup
-            )
-        )
-
-        self.dashboard.add_widget(actions)
-
-        # More
-        more = GridLayout(
-            cols=2,
-            size_hint_y=None,
-            height=dp(105),
-            spacing=dp(8)
-        )
-
-        more.add_widget(
-            self.button(
-                "🔎 SEARCH",
-                self.search_popup
-            )
-        )
-
-        more.add_widget(
-            self.button(
-                "📜 HISTORY",
-                self.history_popup
-            )
-        )
-
-        more.add_widget(
-            self.button(
-                "🔄 REFRESH",
-                lambda x: self.refresh_dashboard()
-            )
-        )
-
-        more.add_widget(
-            self.button(
-                "⚙ RESET DATA",
-                self.reset_popup
-            )
-        )
-
-        self.dashboard.add_widget(more)
-
-        # Goal
-        self.dashboard.add_widget(
-            self.goal_summary()
-        )
-
-        self.dashboard.add_widget(
-            self.label(
-                "Money Manager • Your money, your control.",
-                12
-            )
-        )
-
-    # -----------------------------------------------------
-    # GOAL
-    # -----------------------------------------------------
-
-    def goal_summary(self):
-
-        box = BoxLayout(
-            orientation="vertical",
-            size_hint_y=None,
-            height=dp(105),
-            spacing=dp(5)
-        )
-
-        goal = float(self.data.get("goal", 0) or 0)
-
-        income = sum(
-            x["amount"]
-            for x in self.data["transactions"]
-            if x["type"] == "income"
-        )
-
-        expense = sum(
-            x["amount"]
-            for x in self.data["transactions"]
-            if x["type"] == "expense"
-        )
-
-        balance = max(0, income - expense)
-
-        if goal > 0:
-
-            percent = min(
-                100,
-                (balance / goal) * 100
-            )
-
-            box.add_widget(
-                self.label(
-                    f"🎯 {self.data.get('goal_name','Savings Goal')}   "
-                    f"{money(balance)} / {money(goal)}",
-                    14,
-                    True
-                )
-            )
-
-            progress = ProgressBar(
-                max=100,
-                value=percent,
-                size_hint_y=None,
-                height=dp(18)
-            )
-
-            box.add_widget(progress)
-
-            box.add_widget(
-                self.label(
-                    f"{percent:.1f}% completed",
-                    13
-                )
-            )
-
-        else:
-
-            box.add_widget(
-                self.label(
-                    "🎯 No savings goal set.",
-                    14,
-                    True
-                )
-            )
-
-        return box
-
-    def goal_popup(self, *args):
-
-        layout = BoxLayout(
-            orientation="vertical",
-            padding=dp(12),
-            spacing=dp(8)
-        )
-
-        name = self.input_box(
-            "Goal name",
-            self.data.get("goal_name", "Savings Goal")
-        )
-
-        amount = self.input_box(
-            "Goal amount",
-            str(self.data.get("goal", ""))
-        )
-
-        save = self.button(
-            "SAVE GOAL",
-            lambda x: self.save_goal(
-                name,
-                amount,
-                popup
-            )
-        )
-
-        layout.add_widget(name)
-        layout.add_widget(amount)
-        layout.add_widget(save)
-
-        popup = Popup(
-            title="🎯 Savings Goal",
-            content=layout,
-            size_hint=(0.9, None),
-            height=dp(280)
-        )
-
-        popup.open()
-
-    def save_goal(self, name, amount, popup):
-
-        try:
-            value = float(amount.text)
-            if value < 0:
-                raise ValueError
-        except:
             return
 
-        self.data["goal"] = value
-        self.data["goal_name"] = (
-            name.text.strip()
-            or "Savings Goal"
-        )
+        lines = []
 
-        self.save_data()
-        popup.dismiss()
-        self.refresh_dashboard()
+        for index, item in reversed(results):
 
-    # -----------------------------------------------------
-    # ADD TRANSACTION
-    # -----------------------------------------------------
+            if item["type"] == "income":
 
-    def add_income(self, *args):
-        self.transaction_popup("income")
-
-    def add_expense(self, *args):
-        self.transaction_popup("expense")
-
-    def transaction_popup(self, typ):
-
-        layout = BoxLayout(
-            orientation="vertical",
-            padding=dp(12),
-            spacing=dp(8)
-        )
-
-        amount = self.input_box(
-            "Amount"
-        )
-
-        category = self.input_box(
-            "Category (Food, Transport, etc.)"
-        )
-
-        note = self.input_box(
-            "Note (optional)"
-        )
-
-        date = self.input_box(
-            "Date YYYY-MM-DD",
-            today()
-        )
-
-        title = (
-            "➕ Add Income"
-            if typ == "income"
-            else
-            "➖ Add Expense"
-        )
-
-        save = self.button(
-            "SAVE",
-            lambda x: self.save_transaction(
-                typ,
-                amount,
-                category,
-                note,
-                date,
-                popup
-            )
-        )
-
-        layout.add_widget(amount)
-        layout.add_widget(category)
-        layout.add_widget(note)
-        layout.add_widget(date)
-        layout.add_widget(save)
-
-        popup = Popup(
-            title=title,
-            content=layout,
-            size_hint=(0.92, None),
-            height=dp(390)
-        )
-
-        popup.open()
-
-    def save_transaction(
-        self,
-        typ,
-        amount,
-        category,
-        note,
-        date,
-        popup
-    ):
-
-        try:
-            value = float(
-                amount.text.replace(",", "")
-            )
-
-            if value <= 0:
-                raise ValueError
-
-        except:
-            return
-
-        item = {
-            "id": make_id(),
-            "type": typ,
-            "amount": value,
-            "category": category.text.strip() or "Other",
-            "date": date.text.strip() or today(),
-            "note": note.text.strip()
-        }
-
-        self.data["transactions"].append(item)
-
-        self.save_data()
-
-        popup.dismiss()
-
-        self.refresh_dashboard()
-
-    # -----------------------------------------------------
-    # HISTORY
-    # -----------------------------------------------------
-
-    def history_popup(self, *args):
-
-        layout = BoxLayout(
-            orientation="vertical",
-            padding=dp(8),
-            spacing=dp(5)
-        )
-
-        scroll = ScrollView()
-
-        items = BoxLayout(
-            orientation="vertical",
-            spacing=dp(6),
-            size_hint_y=None
-        )
-
-        items.bind(
-            minimum_height=items.setter(
-                "height"
-            )
-        )
-
-        transactions = list(
-            reversed(
-                self.data["transactions"]
-            )
-        )
-
-        if not transactions:
-
-            items.add_widget(
-                self.label(
-                    "No transactions yet.",
-                    16
-                )
-            )
-
-        for item in transactions:
-
-            row = self.transaction_row(
-                item
-            )
-
-            items.add_widget(row)
-
-        scroll.add_widget(items)
-
-        layout.add_widget(scroll)
-
-        close = self.button(
-            "CLOSE",
-            lambda x: popup.dismiss()
-        )
-
-        layout.add_widget(close)
-
-        popup = Popup(
-            title="📜 Transaction History",
-            content=layout,
-            size_hint=(0.96, 0.9)
-        )
-
-        popup.open()
-
-    def transaction_row(self, item):
-
-        row = BoxLayout(
-            size_hint_y=None,
-            height=dp(85),
-            spacing=dp(5)
-        )
-
-        typ = item["type"]
-
-        sign = "+" if typ == "income" else "-"
-
-        text = (
-            f"{sign}{money(item['amount'])}\n"
-            f"{item['category']} • {item['date']}\n"
-            f"{item.get('note','')}"
-        )
-
-        info = self.label(
-            text,
-            13,
-            False
-        )
-
-        edit = self.button(
-            "✏️",
-            lambda x, i=item:
-            self.edit_transaction(i),
-            55
-        )
-
-        delete = self.button(
-            "🗑️",
-            lambda x, i=item:
-            self.delete_transaction(i),
-            55
-        )
-
-        row.add_widget(info)
-        row.add_widget(edit)
-        row.add_widget(delete)
-
-        return row
-
-    # -----------------------------------------------------
-    # EDIT
-    # -----------------------------------------------------
-
-    def edit_transaction(self, item):
-
-        layout = BoxLayout(
-            orientation="vertical",
-            padding=dp(12),
-            spacing=dp(8)
-        )
-
-        amount = self.input_box(
-            "Amount",
-            str(item["amount"])
-        )
-
-        category = self.input_box(
-            "Category",
-            item["category"]
-        )
-
-        note = self.input_box(
-            "Note",
-            item.get("note", "")
-        )
-
-        date = self.input_box(
-            "Date",
-            item.get("date", today())
-        )
-
-        save = self.button(
-            "SAVE CHANGES",
-            lambda x: self.update_transaction(
-                item,
-                amount,
-                category,
-                note,
-                date,
-                popup
-            )
-        )
-
-        layout.add_widget(amount)
-        layout.add_widget(category)
-        layout.add_widget(note)
-        layout.add_widget(date)
-        layout.add_widget(save)
-
-        popup = Popup(
-            title="✏️ Edit Transaction",
-            content=layout,
-            size_hint=(0.92, None),
-            height=dp(390)
-        )
-
-        popup.open()
-
-    def update_transaction(
-        self,
-        item,
-        amount,
-        category,
-        note,
-        date,
-        popup
-    ):
-
-        try:
-            value = float(
-                amount.text.replace(",", "")
-            )
-
-            if value <= 0:
-                raise ValueError
-
-        except:
-            return
-
-        item["amount"] = value
-        item["category"] = (
-            category.text.strip()
-            or "Other"
-        )
-        item["note"] = note.text.strip()
-        item["date"] = (
-            date.text.strip()
-            or today()
-        )
-
-        self.save_data()
-
-        popup.dismiss()
-
-        self.refresh_dashboard()
-
-    # -----------------------------------------------------
-    # DELETE
-    # -----------------------------------------------------
-
-    def delete_transaction(self, item):
-
-        layout = BoxLayout(
-            orientation="vertical",
-            padding=dp(12),
-            spacing=dp(10)
-        )
-
-        layout.add_widget(
-            self.label(
-                "Delete this transaction?",
-                17,
-                True
-            )
-        )
-
-        buttons = GridLayout(
-            cols=2,
-            size_hint_y=None,
-            height=dp(55),
-            spacing=dp(8)
-        )
-
-        buttons.add_widget(
-            self.button(
-                "CANCEL",
-                lambda x: popup.dismiss()
-            )
-        )
-
-        buttons.add_widget(
-            self.button(
-                "DELETE",
-                lambda x:
-                self.confirm_delete(
-                    item,
-                    popup
-                )
-            )
-        )
-
-        layout.add_widget(buttons)
-
-        popup = Popup(
-            title="⚠️ Confirm",
-            content=layout,
-            size_hint=(0.85, None),
-            height=dp(210)
-        )
-
-        popup.open()
-
-    def confirm_delete(self, item, popup):
-
-        try:
-            self.data["transactions"].remove(
-                item
-            )
-        except:
-            pass
-
-        self.save_data()
-
-        popup.dismiss()
-
-        self.refresh_dashboard()
-
-    # -----------------------------------------------------
-    # SEARCH
-    # -----------------------------------------------------
-
-    def search_popup(self, *args):
-
-        layout = BoxLayout(
-            orientation="vertical",
-            padding=dp(10),
-            spacing=dp(8)
-        )
-
-        search = self.input_box(
-            "Search category, note, date..."
-        )
-
-        results = ScrollView()
-
-        result_box = BoxLayout(
-            orientation="vertical",
-            spacing=dp(5),
-            size_hint_y=None
-        )
-
-        result_box.bind(
-            minimum_height=result_box.setter(
-                "height"
-            )
-        )
-
-        def do_search(instance):
-
-            result_box.clear_widgets()
-
-            q = search.text.lower().strip()
-
-            found = []
-
-            for item in self.data["transactions"]:
-
-                text = (
-                    str(item.get("category", "")) +
-                    " " +
-                    str(item.get("note", "")) +
-                    " " +
-                    str(item.get("date", ""))
-                ).lower()
-
-                if q in text:
-                    found.append(item)
-
-            if not found:
-
-                result_box.add_widget(
-                    self.label(
-                        "No results.",
-                        16
-                    )
-                )
+                icon = "🟢"
+                sign = "+"
 
             else:
 
-                for item in reversed(found):
-                    result_box.add_widget(
-                        self.transaction_row(item)
-                    )
+                icon = "🔴"
+                sign = "-"
 
-        search.bind(
-            text=do_search
+            lines.append(
+                f"{icon} {item['title']}\n"
+                f"💵 {sign}{item['amount']:,} تومان\n"
+                f"📂 {item['category']}\n"
+                f"🕐 {item['date']}\n"
+                f"شماره تراکنش: {index + 1}\n"
+                "━━━━━━━━━━━━━━━━\n"
+            )
+
+        self.history_text = "\n".join(lines)
+
+    def delete_last(self):
+
+        data = App.get_running_app().data["transactions"]
+
+        if not data:
+
+            self.history_text = "📭 تراکنشی وجود ندارد."
+
+            return
+
+        data.pop()
+
+        App.get_running_app().save_file()
+
+        self.refresh(
+            self.ids.search.text
         )
 
-        results.add_widget(result_box)
+    def delete_all(self):
 
-        layout.add_widget(search)
-        layout.add_widget(results)
+        App.get_running_app().data["transactions"] = []
 
-        close = self.button(
-            "CLOSE",
-            lambda x: popup.dismiss()
+        App.get_running_app().save_file()
+
+        self.refresh("")
+
+
+class ReportScreen(Screen):
+
+    report_text = StringProperty("")
+
+    def update(self):
+
+        transactions = (
+            App.get_running_app()
+            .data["transactions"]
         )
 
-        layout.add_widget(close)
-
-        popup = Popup(
-            title="🔎 Search",
-            content=layout,
-            size_hint=(0.96, 0.9)
-        )
-
-        popup.open()
-
-    # -----------------------------------------------------
-    # REPORT
-    # -----------------------------------------------------
-
-    def report_popup(self, *args):
-
-        income = sum(
-            x["amount"]
-            for x in self.data["transactions"]
-            if x["type"] == "income"
-        )
-
-        expense = sum(
-            x["amount"]
-            for x in self.data["transactions"]
-            if x["type"] == "expense"
-        )
-
-        balance = income - expense
+        income = 0
+        expense = 0
 
         categories = {}
 
-        for item in self.data["transactions"]:
+        for item in transactions:
 
-            if item["type"] != "expense":
-                continue
+            if item["type"] == "income":
 
-            cat = item["category"]
+                income += item["amount"]
 
-            categories[cat] = (
-                categories.get(cat, 0)
-                + item["amount"]
-            )
+            else:
 
-        layout = BoxLayout(
-            orientation="vertical",
-            padding=dp(12),
-            spacing=dp(8)
-        )
+                expense += item["amount"]
 
-        layout.add_widget(
-            self.label(
-                "📊 FINANCIAL REPORT",
-                21,
-                True
-            )
-        )
+                category = item["category"]
 
-        layout.add_widget(
-            self.label(
-                f"Total Income: {money(income)}",
-                16,
-                True
-            )
-        )
+                categories[category] = (
+                    categories.get(category, 0)
+                    + item["amount"]
+                )
 
-        layout.add_widget(
-            self.label(
-                f"Total Expense: {money(expense)}",
-                16,
-                True
-            )
-        )
+        balance = income - expense
 
-        layout.add_widget(
-            self.label(
-                f"Balance: {money(balance)}",
-                18,
-                True
-            )
-        )
+        if income > 0:
 
-        layout.add_widget(
-            self.label(
-                "EXPENSE BY CATEGORY",
-                15,
-                True
-            )
-        )
+            saving_percent = (
+                balance / income
+            ) * 100
 
-        scroll = ScrollView()
+        else:
 
-        cats = BoxLayout(
-            orientation="vertical",
-            size_hint_y=None,
-            spacing=dp(5)
-        )
-
-        cats.bind(
-            minimum_height=cats.setter(
-                "height"
-            )
-        )
+            saving_percent = 0
 
         if categories:
 
-            for name, value in sorted(
+            category_lines = []
+
+            for category, amount in sorted(
                 categories.items(),
                 key=lambda x: x[1],
                 reverse=True
             ):
 
-                cats.add_widget(
-                    self.label(
-                        f"{name}: {money(value)}",
-                        14
-                    )
+                category_lines.append(
+                    f"• {category}: "
+                    f"{amount:,} تومان"
                 )
+
+            category_text = "\n".join(
+                category_lines
+            )
 
         else:
 
-            cats.add_widget(
-                self.label(
-                    "No expenses yet.",
-                    14
+            category_text = (
+                "هنوز هزینه‌ای ثبت نشده."
+            )
+
+        self.report_text = (
+            "📊 گزارش کامل\n\n"
+            f"💰 کل درآمد:\n"
+            f"{income:,} تومان\n\n"
+            f"💸 کل هزینه:\n"
+            f"{expense:,} تومان\n\n"
+            f"💵 موجودی:\n"
+            f"{balance:,} تومان\n\n"
+            f"📈 درصد باقی‌مانده:\n"
+            f"{saving_percent:.1f}%\n\n"
+            "📂 هزینه بر اساس دسته‌بندی:\n\n"
+            f"{category_text}"
+        )
+
+
+class GoalScreen(Screen):
+
+    goal_text = StringProperty(
+        "هنوز هدفی تعیین نشده."
+    )
+
+    progress = NumericProperty(0)
+
+    def on_enter(self):
+
+        self.update()
+
+    def set_goal(self):
+
+        value = self.ids.goal.text.strip()
+
+        if not value.isdigit() or int(value) <= 0:
+
+            self.goal_text = (
+                "⚠️ مبلغ هدف معتبر نیست."
+            )
+
+            return
+
+        App.get_running_app().data["goal"] = (
+            int(value)
+        )
+
+        App.get_running_app().save_file()
+
+        self.ids.goal.text = ""
+
+        self.update()
+
+    def update(self):
+
+        app = App.get_running_app()
+
+        goal = app.data.get("goal", 0)
+
+        income = sum(
+            x["amount"]
+            for x in app.data["transactions"]
+            if x["type"] == "income"
+        )
+
+        expense = sum(
+            x["amount"]
+            for x in app.data["transactions"]
+            if x["type"] == "expense"
+        )
+
+        balance = income - expense
+
+        if goal <= 0:
+
+            self.goal_text = (
+                "🎯 هنوز هدفی تعیین نشده."
+            )
+
+            self.progress = 0
+
+            return
+
+        percent = (
+            balance / goal
+        ) * 100
+
+        if percent < 0:
+            percent = 0
+
+        if percent > 100:
+            percent = 100
+
+        self.progress = percent
+
+        self.goal_text = (
+            f"🎯 هدف: {goal:,} تومان\n\n"
+            f"💰 موجودی فعلی: "
+            f"{balance:,} تومان\n\n"
+            f"📈 پیشرفت: "
+            f"{percent:.1f}%"
+        )
+
+
+class SettingsScreen(Screen):
+
+    status = StringProperty("")
+
+    def backup(self):
+
+        app = App.get_running_app()
+
+        try:
+
+            if os.path.exists(
+                app.file_path
+            ):
+
+                shutil.copy2(
+                    app.file_path,
+                    app.backup_path
                 )
+
+                self.status = (
+                    "✅ بکاپ ساخته شد"
+                )
+
+            else:
+
+                self.status = (
+                    "⚠️ اطلاعاتی برای بکاپ نیست"
+                )
+
+        except Exception as e:
+
+            self.status = (
+                f"❌ خطا: {e}"
             )
 
-        scroll.add_widget(cats)
+    def restore(self):
 
-        layout.add_widget(scroll)
+        app = App.get_running_app()
 
-        layout.add_widget(
-            self.button(
-                "CLOSE",
-                lambda x: popup.dismiss()
+        try:
+
+            if not os.path.exists(
+                app.backup_path
+            ):
+
+                self.status = (
+                    "⚠️ بکاپ پیدا نشد"
+                )
+
+                return
+
+            shutil.copy2(
+                app.backup_path,
+                app.file_path
+            )
+
+            app.load_file()
+
+            main = self.manager.get_screen(
+                "main"
+            )
+
+            main.update_dashboard()
+
+            self.status = (
+                "✅ بکاپ بازیابی شد"
+            )
+
+        except Exception as e:
+
+            self.status = (
+                f"❌ خطا: {e}"
+            )
+
+    def reset_all(self):
+
+        app = App.get_running_app()
+
+        app.data = {
+            "transactions": [],
+            "goal": 0
+        }
+
+        app.save_file()
+
+        main = self.manager.get_screen(
+            "main"
+        )
+
+        main.update_dashboard()
+
+        self.status = (
+            "♻️ اطلاعات پاک شد"
+        )
+
+
+class MoneyManagerApp(App):
+
+    def build(self):
+
+        self.title = "Money Manager 3"
+
+        self.data = {
+            "transactions": [],
+            "goal": 0
+        }
+
+        self.file_path = os.path.join(
+            self.user_data_dir,
+            "money_manager.json"
+        )
+
+        self.backup_path = os.path.join(
+            self.user_data_dir,
+            "money_manager_backup.json"
+        )
+
+        self.load_file()
+
+        Builder.load_string(KV)
+
+        manager = ScreenManager()
+
+        manager.add_widget(
+            MainScreen(
+                name="main"
             )
         )
 
-        popup = Popup(
-            title="📊 Report",
-            content=layout,
-            size_hint=(0.92, 0.9)
-        )
-
-        popup.open()
-
-    # -----------------------------------------------------
-    # RESET
-    # -----------------------------------------------------
-
-    def reset_popup(self, *args):
-
-        layout = BoxLayout(
-            orientation="vertical",
-            padding=dp(12),
-            spacing=dp(10)
-        )
-
-        layout.add_widget(
-            self.label(
-                "⚠️ This will delete all transactions\n"
-                "and the savings goal.",
-                16,
-                True
+        manager.add_widget(
+            HistoryScreen(
+                name="history"
             )
         )
 
-        buttons = GridLayout(
-            cols=2,
-            size_hint_y=None,
-            height=dp(55),
-            spacing=dp(8)
-        )
-
-        buttons.add_widget(
-            self.button(
-                "CANCEL",
-                lambda x: popup.dismiss()
+        manager.add_widget(
+            ReportScreen(
+                name="report"
             )
         )
 
-        buttons.add_widget(
-            self.button(
-                "RESET",
-                lambda x:
-                self.do_reset(popup)
+        manager.add_widget(
+            GoalScreen(
+                name="goal"
             )
         )
 
-        layout.add_widget(buttons)
-
-        popup = Popup(
-            title="⚠️ RESET ALL",
-            content=layout,
-            size_hint=(0.88, None),
-            height=dp(230)
+        manager.add_widget(
+            SettingsScreen(
+                name="settings"
+            )
         )
 
-        popup.open()
+        return manager
 
-    def do_reset(self, popup):
+    def load_file(self):
 
-        self.data = self.default_data()
+        try:
 
-        self.save_data()
+            if os.path.exists(
+                self.file_path
+            ):
 
-        popup.dismiss()
+                with open(
+                    self.file_path,
+                    "r",
+                    encoding="utf-8"
+                ) as file:
 
-        self.refresh_dashboard()
+                    self.data = json.load(file)
 
+            if "transactions" not in self.data:
 
-# ---------------------------------------------------------
-# RUN
-# ---------------------------------------------------------
+                self.data["transactions"] = []
+
+            if "goal" not in self.data:
+
+                self.data["goal"] = 0
+
+        except Exception:
+
+            self.data = {
+                "transactions": [],
+                "goal": 0
+            }
+
+    def save_file(self):
+
+        try:
+
+            os.makedirs(
+                self.user_data_dir,
+                exist_ok=True
+            )
+
+            with open(
+                self.file_path,
+                "w",
+                encoding="utf-8"
+            ) as file:
+
+                json.dump(
+                    self.data,
+                    file,
+                    ensure_ascii=False,
+                    indent=2
+                )
+
+        except Exception as e:
+
+            print(
+                "Save error:",
+                e
+            )
+
 
 if __name__ == "__main__":
+
     MoneyManagerApp().run()
